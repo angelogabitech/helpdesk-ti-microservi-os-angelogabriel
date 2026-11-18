@@ -18,5 +18,27 @@ services:
     cap_drop:
       - ALL
 
+  # Etapa 3: serviço isolado, ativado somente quando solicitado.
+  # A tela continua no monólito até a integração com o gateway.
+  usuarios:
+    profiles: [etapa3]
+    build: ./servicos/usuarios
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      DATABASE_URL: sqlite:////dados/usuarios.db
+      DADOS_EXEMPLO: ${DADOS_EXEMPLO:-1}
+    volumes:
+      - dados_usuarios:/dados
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
 volumes:
   dados:
+  dados_usuarios:

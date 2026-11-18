@@ -20,3 +20,23 @@ jobs:
         run: pytest -q
       - name: Dependências com falhas conhecidas
         run: pip-audit -r requirements.txt
+
+  usuarios:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: servicos/usuarios
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - name: Testes do serviço de Usuários
+        run: python -m pytest -q
+      - name: Dependências do serviço de Usuários
+        run: pip-audit -r requirements.txt
+      - name: Build independente
+        run: docker build -t helpdesk-usuarios:ci .

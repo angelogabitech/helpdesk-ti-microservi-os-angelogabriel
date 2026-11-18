@@ -11,3 +11,7 @@ class RegraDeNegocio(Exception):
 
 class SemPermissao(Exception):
     """O usuário está logado, mas não pode fazer esta operação."""
+
+class ErroDeIntegracao(Exception):
+    """Ocorreu um erro ao integrar com outro sistema."""
+

@@ -39,3 +39,4 @@ class UsuarioPublico(BaseModel):
     id: int
     nome: str
     perfil: Perfil
+
