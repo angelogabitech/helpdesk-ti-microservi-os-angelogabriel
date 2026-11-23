@@ -20,3 +20,19 @@ updates:
     directory: /servicos/usuarios
     schedule:
       interval: weekly
+  - package-ecosystem: pip
+    directory: /servicos/inventario
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /servicos/inventario
+    schedule:
+      interval: weekly
+  - package-ecosystem: pip
+    directory: /servicos/chamados
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /servicos/chamados
+    schedule:
+      interval: weekly

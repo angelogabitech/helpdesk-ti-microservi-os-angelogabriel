@@ -18,10 +18,9 @@ services:
     cap_drop:
       - ALL
 
-  # Etapa 3: serviço isolado, ativado somente quando solicitado.
-  # A tela continua no monólito até a integração com o gateway.
+  # Serviços da migração ativados por perfil durante a transição.
   usuarios:
-    profiles: [etapa3]
+    profiles: [etapa3, etapa4, etapa5]
     build: ./servicos/usuarios
     env_file:
       - path: .env
@@ -39,6 +38,52 @@ services:
     cap_drop:
       - ALL
 
+  inventario:
+    profiles: [etapa4, etapa5]
+    build: ./servicos/inventario
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      DATABASE_URL: sqlite:////dados/inventario.db
+      DADOS_EXEMPLO: ${DADOS_EXEMPLO:-1}
+      USUARIOS_URL: http://usuarios:8000
+      USUARIOS_TIMEOUT_SEGUNDOS: ${USUARIOS_TIMEOUT_SEGUNDOS:-3}
+    volumes:
+      - dados_inventario:/dados
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  chamados:
+    profiles: [etapa5]
+    build: ./servicos/chamados
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      DATABASE_URL: sqlite:////dados/chamados.db
+      DADOS_EXEMPLO: ${DADOS_EXEMPLO:-1}
+      USUARIOS_URL: http://usuarios:8000
+      INVENTARIO_URL: http://inventario:8000
+      USUARIOS_TIMEOUT_SEGUNDOS: ${USUARIOS_TIMEOUT_SEGUNDOS:-3}
+      INVENTARIO_TIMEOUT_SEGUNDOS: ${INVENTARIO_TIMEOUT_SEGUNDOS:-3}
+    volumes:
+      - dados_chamados:/dados
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
 volumes:
   dados:
   dados_usuarios:
+  dados_inventario:
+  dados_chamados:

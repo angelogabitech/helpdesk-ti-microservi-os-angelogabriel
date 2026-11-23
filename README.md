@@ -4,7 +4,7 @@ Sistema de chamados de TI (no estilo de um GLPI simplificado), feito em **Python
 É a aplicação base da atividade de **Arquitetura de Software**: hoje ela é um **monólito**;
 a missão de cada aluno é transformá-la em **microsserviços** (veja [DESAFIO.md](DESAFIO.md)).
 
-## Migração em andamento — etapa 3
+## Migração em andamento — etapa 5
 
 O [serviço de Usuários e autenticação](servicos/usuarios/README.md) está disponível como projeto independente em `servicos/usuarios/`, com banco, Dockerfile e testes próprios. Para iniciá-lo isoladamente, configure o `JWT_SEGREDO` no `.env` e execute na raiz:
 
@@ -12,7 +12,19 @@ O [serviço de Usuários e autenticação](servicos/usuarios/README.md) está di
 docker compose --profile etapa3 up -d --build usuarios
 ```
 
-A tela na porta 8000 continua usando o monólito. Os bancos das duas aplicações são separados; a integração pelo gateway será feita em uma próxima etapa. O [plano de execução](PLANO_EXECUCAO.md) registra a sequência de migração.
+Para subir Usuários e Inventário e testar a comunicação entre os dois:
+
+```powershell
+docker compose --profile etapa4 up -d --build usuarios inventario
+```
+
+Para subir Usuários, Inventário e Chamados e testar os três serviços juntos:
+
+```powershell
+docker compose --profile etapa5 up -d --build --wait usuarios inventario chamados
+```
+
+A tela na porta 8000 usa o monólito durante a migração. Cada serviço tem seu banco, e Chamados consulta Usuários e Inventário por HTTP. O histórico das primeiras entregas está em [ETAPA_04.md](ETAPA_04.md). Os arquivos e testes desta entrega estão em [ETAPA_05.md](ETAPA_05.md).
 
 ## Telas do sistema
 

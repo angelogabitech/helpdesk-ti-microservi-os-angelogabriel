@@ -40,3 +40,43 @@ jobs:
         run: pip-audit -r requirements.txt
       - name: Build independente
         run: docker build -t helpdesk-usuarios:ci .
+
+  inventario:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: servicos/inventario
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - name: Testes do serviço de Inventário
+        run: python -m pytest -q
+      - name: Dependências do serviço de Inventário
+        run: pip-audit -r requirements.txt
+      - name: Build independente
+        run: docker build -t helpdesk-inventario:ci .
+
+  chamados:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: servicos/chamados
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - name: Testes do serviço de Chamados
+        run: python -m pytest -q
+      - name: Dependências do serviço de Chamados
+        run: pip-audit -r requirements.txt
+      - name: Build independente
+        run: docker build -t helpdesk-chamados:ci .
