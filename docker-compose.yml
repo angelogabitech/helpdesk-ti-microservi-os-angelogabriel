@@ -1,15 +1,18 @@
 services:
-  helpdesk:
-    build: .
+  gateway:
+    build: ./gateway
     ports:
-      - "127.0.0.1:8000:8000"   # só acessível pelo próprio computador
-    env_file:
-      - path: .env
-        required: false
+      - "127.0.0.1:8000:8000"
     environment:
-      DADOS_EXEMPLO: ${DADOS_EXEMPLO:-1}
-    volumes:
-      - dados:/dados
+      DOCS: ${DOCS:-1}
+      USUARIOS_URL: http://usuarios-proxy:8000
+      INVENTARIO_URL: http://inventario:8000
+      CHAMADOS_URL: http://chamados:8000
+      GATEWAY_TIMEOUT_SEGUNDOS: ${GATEWAY_TIMEOUT_SEGUNDOS:-8}
+    networks:
+      default:
+      identidade:
+        ipv4_address: ${GATEWAY_IP_INTERNO:-172.31.46.2}
     read_only: true
     tmpfs:
       - /tmp
@@ -18,16 +21,21 @@ services:
     cap_drop:
       - ALL
 
-  # Serviços da migração ativados por perfil durante a transição.
   usuarios:
-    profiles: [etapa3, etapa4, etapa5]
     build: ./servicos/usuarios
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
     env_file:
       - path: .env
         required: true
     environment:
       DATABASE_URL: sqlite:////dados/usuarios.db
       DADOS_EXEMPLO: ${DADOS_EXEMPLO:-1}
+      FORWARDED_ALLOW_IPS: ${GATEWAY_IP_INTERNO:-172.31.46.2}
+    networks:
+      default:
+      identidade:
+        aliases:
+          - usuarios-proxy
     volumes:
       - dados_usuarios:/dados
     read_only: true
@@ -39,7 +47,6 @@ services:
       - ALL
 
   inventario:
-    profiles: [etapa4, etapa5]
     build: ./servicos/inventario
     env_file:
       - path: .env
@@ -60,7 +67,6 @@ services:
       - ALL
 
   chamados:
-    profiles: [etapa5]
     build: ./servicos/chamados
     env_file:
       - path: .env
@@ -83,7 +89,14 @@ services:
       - ALL
 
 volumes:
-  dados:
   dados_usuarios:
   dados_inventario:
   dados_chamados:
+
+networks:
+  identidade:
+    internal: true
+    ipam:
+      config:
+        - subnet: ${GATEWAY_SUBREDE_INTERNA:-172.31.46.0/28}
+          ip_range: ${GATEWAY_FAIXA_INTERNA:-172.31.46.8/29}

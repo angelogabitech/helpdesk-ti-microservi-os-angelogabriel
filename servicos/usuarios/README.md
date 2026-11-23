@@ -2,7 +2,7 @@
 
 Primeiro serviço extraído do HelpDesk TI. É um projeto FastAPI independente, com dependências, Dockerfile, testes e banco próprios. Não importa o código do monólito nem os módulos de Inventário, Chamados ou Notificações.
 
-Nesta etapa, a tela na porta 8000 continua usando o monólito e seu banco original. O novo serviço usa outro banco; cadastrar usuários em um deles não modifica o outro. A integração da interface ocorrerá na etapa do gateway.
+O serviço usa seu próprio banco. Na configuração padrão, o gateway encaminha `/auth` e `/usuarios` para esta API.
 
 ## Estrutura
 
@@ -50,12 +50,12 @@ servicos/usuarios/
 Na raiz do repositório, configure `JWT_SEGREDO` no `.env` com pelo menos 32 caracteres. O serviço recusa a inicialização se o segredo estiver ausente ou for curto; não gera uma chave aleatória. Não é necessário alterar o valor que você já gerou.
 
 ```powershell
-docker compose --profile etapa3 up -d --build usuarios
-docker compose --profile etapa3 ps usuarios
+docker compose up -d --build usuarios
+docker compose ps usuarios
 docker compose logs --tail 50 usuarios
 ```
 
-O perfil `etapa3` mantém o serviço opcional nesta entrega. O comando acima inicia somente Usuários, sem precisar subir o monólito. O build usa exclusivamente a pasta deste projeto. Seu banco fica em `/dados/usuarios.db`, no volume `dados_usuarios`; o volume `dados` do monólito é preservado.
+O comando acima inicia somente Usuários. O build usa a pasta deste projeto e o banco fica em `/dados/usuarios.db`, no volume `dados_usuarios`.
 
 O serviço não publica portas para o computador. Para consultar a saúde pela rede local do contêiner:
 
@@ -77,7 +77,7 @@ Para testar o build fora do Compose:
 docker build -t helpdesk-usuarios:etapa3 ./servicos/usuarios
 ```
 
-O contêiner roda sem root, com capacidades removidas e filesystem somente leitura no Compose, exceto o volume de banco e o diretório temporário. Por enquanto, o Uvicorn não confia em cabeçalhos de proxy: o gateway e a identificação segura do IP original serão configurados na etapa 6. O bloqueio de login usa e-mail e endereço de conexão e permanece em memória, adequado a uma única instância.
+O contêiner roda sem root, com capacidades removidas e filesystem somente leitura no Compose, exceto o volume de banco e o diretório temporário. No Compose principal, o Uvicorn aceita cabeçalhos de proxy apenas do IP privado do gateway. O bloqueio de login usa e-mail e endereço de conexão e permanece em memória, adequado a uma única instância.
 
 ## Executar localmente sem Docker
 

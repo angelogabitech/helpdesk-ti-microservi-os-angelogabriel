@@ -1,0 +1,14 @@
+# Complemento do Compose principal usado exclusivamente pela suíte de integração.
+services:
+  gateway:
+    ports: !override
+      - "127.0.0.1::8000"
+  usuarios:
+    env_file: !override
+      - path: ${HELPDESK_TESTE_ENV:?Informe o arquivo temporario pelo pytest}
+  inventario:
+    env_file: !override
+      - path: ${HELPDESK_TESTE_ENV:?Informe o arquivo temporario pelo pytest}
+  chamados:
+    env_file: !override
+      - path: ${HELPDESK_TESTE_ENV:?Informe o arquivo temporario pelo pytest}

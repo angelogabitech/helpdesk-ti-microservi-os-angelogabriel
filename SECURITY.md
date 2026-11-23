@@ -8,9 +8,9 @@ for colocar o sistema em produção.
 
 | Risco | Proteção |
 |---|---|
-| Acesso sem login | Todas as rotas, exceto `/auth/login`, `/saude` e a tela, exigem token JWT (`Authorization: Bearer ...`). |
+| Acesso sem login | Os serviços conferem o JWT (`Authorization: Bearer ...`) nas rotas protegidas. Login, saúde, interface e documentação habilitada são públicos. |
 | Senhas vazadas do banco | Senhas guardadas só como hash **scrypt** com sal aleatório. A senha nunca é salva nem devolvida pela API. |
-| Adivinhar senhas | Bloqueio temporário após 5 tentativas erradas (por e-mail e endereço). Mensagem igual para e-mail inexistente e senha errada. |
+| Adivinhar senhas | Bloqueio temporário após 5 tentativas erradas por e-mail e endereço. Usuários só aceita o IP encaminhado pelo endereço privado do gateway. Mensagem igual para e-mail inexistente e senha errada. |
 | Token falsificado | Token assinado (HS256) com segredo do servidor, com validade, emissor e algoritmo fixos (tokens `alg: none` são recusados). |
 | Ver ou mexer no que não é seu | Permissões por perfil: o solicitante só vê os próprios chamados e notificações; só técnicos e administradores atribuem e resolvem; só administradores criam usuários. |
 | Agir em nome de outra pessoa | O solicitante e o autor do comentário vêm do token, não do corpo da requisição. Campos extras são recusados. |
@@ -21,8 +21,8 @@ for colocar o sistema em produção.
 | SQL injection | Acesso ao banco só pelo SQLAlchemy, com parâmetros (sem SQL montado com texto). |
 | Erros que vazam detalhes | Erros de banco respondem com mensagem genérica. |
 | Dependências vulneráveis | Versões fixas, `pip-audit` no GitHub Actions a cada envio e Dependabot semanal. |
-| Contêiner | Roda como usuário sem privilégios, sistema de arquivos somente leitura, sem capacidades extras, porta exposta só em `127.0.0.1`. |
-| Segredos no código | Segredos só por variável de ambiente (`.env`, fora do Git). |
+| Contêiner | Os contêineres rodam como usuários sem privilégios, com sistema de arquivos somente leitura e capacidades removidas. Somente o gateway publica `127.0.0.1:8000`. |
+| Segredos no código | Os três serviços recebem o mesmo `JWT_SEGREDO` pelo `.env`, fora do Git. O gateway encaminha o token e executa sem a chave JWT. |
 
 ## Antes de usar em produção
 

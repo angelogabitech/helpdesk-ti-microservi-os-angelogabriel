@@ -36,3 +36,15 @@ updates:
     directory: /servicos/chamados
     schedule:
       interval: weekly
+  - package-ecosystem: pip
+    directory: /gateway
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /gateway
+    schedule:
+      interval: weekly
+  - package-ecosystem: pip
+    directory: /integracao
+    schedule:
+      interval: weekly

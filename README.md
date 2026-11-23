@@ -1,32 +1,18 @@
-# HelpDesk TI · versão monolítica
+# HelpDesk TI · microsserviços
 
 Sistema de chamados de TI (no estilo de um GLPI simplificado), feito em **Python + FastAPI**.
-É a aplicação base da atividade de **Arquitetura de Software**: hoje ela é um **monólito**;
-a missão de cada aluno é transformá-la em **microsserviços** (veja [DESAFIO.md](DESAFIO.md)).
+O projeto foi separado em três serviços e um gateway como parte da atividade de **Arquitetura de Software**. [Enunciado do desafio](DESAFIO.md)
 
-## Migração em andamento — etapa 5
+## Histórico da migração
 
-O [serviço de Usuários e autenticação](servicos/usuarios/README.md) está disponível como projeto independente em `servicos/usuarios/`, com banco, Dockerfile e testes próprios. Para iniciá-lo isoladamente, configure o `JWT_SEGREDO` no `.env` e execute na raiz:
-
-```powershell
-docker compose --profile etapa3 up -d --build usuarios
-```
-
-Para subir Usuários e Inventário e testar a comunicação entre os dois:
-
-```powershell
-docker compose --profile etapa4 up -d --build usuarios inventario
-```
-
-Para subir Usuários, Inventário e Chamados e testar os três serviços juntos:
-
-```powershell
-docker compose --profile etapa5 up -d --build --wait usuarios inventario chamados
-```
-
-A tela na porta 8000 usa o monólito durante a migração. Cada serviço tem seu banco, e Chamados consulta Usuários e Inventário por HTTP. O histórico das primeiras entregas está em [ETAPA_04.md](ETAPA_04.md). Os arquivos e testes desta entrega estão em [ETAPA_05.md](ETAPA_05.md).
+- Preparação, Usuários e Inventário. [ETAPA_04.md](ETAPA_04.md)
+- Extração de Chamados. [ETAPA_05.md](ETAPA_05.md)
+- Integração do gateway, interface e Docker Compose. [ETAPA_06.md](ETAPA_06.md)
+- Validação de segurança, integração e indisponibilidade. [ETAPA_07.md](ETAPA_07.md)
 
 ## Telas do sistema
+
+As imagens foram registradas na versão original do projeto.
 
 ![Demonstração: entrar, abrir, atribuir, resolver e fechar um chamado](docs/demo.gif)
 
@@ -57,23 +43,30 @@ A tela na porta 8000 usa o monólito durante a migração. Cada serviço tem seu
 
 ## Como rodar
 
-**Com Docker**
+Copie `.env.example` para `.env` se ainda não tiver um arquivo local. Defina um `JWT_SEGREDO` com pelo menos 32 caracteres. Se o contêiner do monólito estiver em execução, pare-o para liberar a porta 8000:
 
-```bash
+```powershell
+docker compose -f docker-compose.monolito.yml stop helpdesk
+```
+
+Na raiz, inicie o gateway e os três serviços:
+
+```powershell
 docker compose up --build
 ```
 
-**Sem Docker** (Python 3.11 ou mais novo)
+Com `DADOS_EXEMPLO=1`, Usuários e Inventário criam suas contas e ativos de aula no primeiro início. Para preencher uma base vazia de Chamados, aguarde os serviços e rode em outro terminal:
 
-```bash
-pip install -r requirements-dev.txt
-uvicorn app.main:app --reload
+```powershell
+docker compose exec -T chamados python -m app.dados_exemplo
 ```
 
 Depois abra:
 
 - Tela do HelpDesk: http://localhost:8000
 - Documentação da API (Swagger): http://localhost:8000/docs (clique em **Authorize** e cole o token do login)
+
+Para consultar a versão original, pare o gateway com `docker compose stop gateway` e rode `docker compose -f docker-compose.monolito.yml up --build`. O monólito usa seu volume original.
 
 ### Contas de acesso
 
@@ -108,54 +101,47 @@ O arquivo `.env` nunca deve ir para o GitHub (ele já está no `.gitignore`).
 pytest -q
 ```
 
-São 36 testes, incluindo **testes de segurança** (`tests/test_seguranca.py`): login, token falso ou vencido,
-bloqueio de tentativas, permissões por perfil, campos extras e limites de tamanho.
-A cada envio ao GitHub, os testes rodam sozinhos e o `pip-audit` confere se alguma dependência tem falha conhecida.
+A suíte na raiz cobre o monólito. Para testar os projetos independentes, instale o `requirements-dev.txt` e execute `python -m pytest -q` dentro de `gateway/` ou do serviço correspondente em `servicos/`. O GitHub Actions executa as suítes em jobs separados e roda o `pip-audit`.
+
+Para verificar a integração real, rode na raiz com o Docker em execução:
+
+```powershell
+python -m pip install -r integracao/requirements.txt
+python -m pytest -q -c integracao/pytest.ini integracao/tests
+```
+
+A suíte sobe seu próprio projeto Compose, com credenciais, porta temporária e volumes exclusivos. Ela simula as quedas de Inventário e Usuários e remove os recursos daquele projeto ao terminar. O roteiro para a demonstração manual está em [ROTEIRO_VIDEO.md](ROTEIRO_VIDEO.md).
 
 ## Segurança
 
 Veja o que está protegido e o que fazer antes de usar em produção em [SECURITY.md](SECURITY.md).
 
-## Arquitetura atual (monólito)
+## Arquitetura atual
 
-Uma aplicação, um banco e uma implantação. O código é dividido em **módulos**, e cada módulo
-só usa a **porta pública** do outro (o arquivo `servico.py`).
+O gateway é o único contêiner com porta publicada. Usuários, Inventário e Chamados rodam em processos independentes, com um volume SQLite para cada serviço. As chamadas entre serviços passam pela rede do Docker.
 
 ```mermaid
 flowchart TB
-    Tela[Tela do HelpDesk] --> API
-    subgraph API[Aplicação HelpDesk · um processo]
-        Auth[auth]
-        Usuarios[usuarios]
-        Inventario[inventario]
-        Chamados[chamados]
-        Notificacoes[notificacoes]
-        Auth -->|confere a senha| Usuarios
-        Chamados -->|chamada de função| Usuarios
-        Chamados -->|chamada de função| Inventario
-        Chamados -->|chamada de função| Notificacoes
-    end
-    API --> BD[(Banco único)]
+    Tela[Navegador] -->|localhost:8000| Gateway[Gateway]
+    Gateway -->|/auth e /usuarios| Usuarios[Usuários]
+    Gateway -->|/ativos| Inventario[Inventário]
+    Gateway -->|/chamados e /notificacoes| Chamados[Chamados]
+    Chamados -->|HTTP| Usuarios
+    Chamados -->|HTTP| Inventario
+    Inventario -->|HTTP| Usuarios
+    Usuarios --> BU[(usuarios.db)]
+    Inventario --> BI[(inventario.db)]
+    Chamados --> BC[(chamados.db)]
 ```
 
 ```
-app/
-├── main.py            # junta os módulos e sobe a aplicação
-├── config.py          # configurações (variáveis de ambiente)
-├── database.py        # conexão com o banco único
-├── seguranca_http.py  # cabeçalhos de segurança e limite de tamanho
-├── erros.py           # erros de negócio
-├── dados_exemplo.py   # dados iniciais (só para aula)
-├── web/               # tela: index.html, app.js, estilo.css
-├── auth/              # senhas (scrypt), tokens JWT, login, limite de tentativas
-├── usuarios/          # modelos, esquemas, repositorio, servico (público), rotas
-├── inventario/
-├── chamados/          # depende de usuarios, inventario e notificacoes
-└── notificacoes/
+gateway/              # Interface e proxy HTTP
+servicos/
+├── usuarios/         # Login, perfis e usuários
+├── inventario/       # Equipamentos
+└── chamados/         # Chamados, comentários e notificações
+app/                  # Monólito original
 ```
-
-Em `app/chamados/servico.py`, os comentários `# vira chamada HTTP` e `# vira evento` marcam
-os pontos que mudam quando o sistema for separado.
 
 ## Rotas principais
 
