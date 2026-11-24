@@ -3,6 +3,9 @@
 Sistema de chamados de TI (no estilo de um GLPI simplificado), feito em **Python + FastAPI**.
 O projeto foi separado em três serviços e um gateway como parte da atividade de **Arquitetura de Software**. [Enunciado do desafio](DESAFIO.md)
 
+##Video no drive##
+https://drive.google.com/file/d/1c7gJuGb4ePdKa3Ti6Xl7IouL18skh-rM/view?pli=1
+
 ## Histórico da migração
 
 - Preparação, Usuários e Inventário. [ETAPA_04.md](ETAPA_04.md)
